@@ -1,10 +1,14 @@
 ﻿using Google.Cloud.TextToSpeech.V1;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace TextToSpeechApiDemo
 {
     class Program
     {
+        // Cache the JsonSerializerOptions instance
+        private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { WriteIndented = true };
+
         /// <summary>
         /// The main entry point of the program.
         /// </summary>
@@ -22,9 +26,13 @@ namespace TextToSpeechApiDemo
             // Directory for snapshots
             string snapshotDirectory = Path.Combine(Directory.GetCurrentDirectory(), "snapshots");
 
-            // Create the "audio" and "snapshots" directories if they don't exist.
+            // Directory for configs
+            string configDirectory = Path.Combine(Directory.GetCurrentDirectory(), "configs");
+
+            // Create the "audio", "snapshots" and "configs" directories if they don't exist.
             Directory.CreateDirectory(audioDirectory);
             Directory.CreateDirectory(snapshotDirectory);
+            Directory.CreateDirectory(configDirectory);
 
             // Check if the texts directory exists.
             if (!Directory.Exists(textsDirectory))
@@ -33,13 +41,16 @@ namespace TextToSpeechApiDemo
                 return;
             }
 
+            // Load the TextToSpeech configuration from config.json
+            TextToSpeechConfig config = LoadTextToSpeechConfig(configDirectory);
+
             // Get all .xml files in the texts directory.
             string[] xmlFiles = Directory.GetFiles(textsDirectory, "*.xml");
 
             // Process each XML file.
             foreach (string xmlFile in xmlFiles)
             {
-                ProcessXmlFile(xmlFile, audioDirectory, snapshotDirectory);
+                ProcessXmlFile(xmlFile, audioDirectory, snapshotDirectory, config);
             }
             Console.WriteLine("Finished processing all files.");
         }
@@ -50,13 +61,32 @@ namespace TextToSpeechApiDemo
         /// <param name="xmlFile">The path to the XML file.</param>
         /// <param name="audioDirectory">The directory where audio files will be saved.</param>
         /// <param name="snapshotDirectory">The directory where snapshots will be saved.</param>
-        static void ProcessXmlFile(string xmlFile, string audioDirectory, string snapshotDirectory)
+        /// <param name="config">The TextToSpeech configuration.</param>
+        static void ProcessXmlFile(string xmlFile, string audioDirectory, string snapshotDirectory, TextToSpeechConfig config)
 
         {
+            string fileExtension;
+            Console.WriteLine($"Processing: {Path.GetFileName(xmlFile)}");
+
+            // Use a switch statement to determine the file extension based on the AudioEncoding enum.
+            switch (config.AudioEncoding)
+            {
+                case AudioEncoding.Mp3:
+                    fileExtension = ".mp3";
+                    break;
+                case AudioEncoding.OggOpus:
+                    fileExtension = ".ogg";
+                    break;
+                default:
+                    Console.WriteLine($"Warning: Unsupported audio encoding '{config.AudioEncoding}'. Defaulting to .mp3");
+                    fileExtension = ".mp3";
+                    break;
+            }
+
             try
             {
                 string baseFileName = Path.GetFileNameWithoutExtension(xmlFile);
-                string outputFileName = $"{baseFileName}.mp3";
+                string outputFileName = $"{baseFileName}{fileExtension}";
                 string outputFilePath = Path.Combine(audioDirectory, outputFileName);
 
                 string? latestSnapshot = GetLatestSnapshot(xmlFile, snapshotDirectory);
@@ -78,7 +108,7 @@ namespace TextToSpeechApiDemo
                         }
                         else
                         {
-                            Console.WriteLine($"Audio file not found for {xmlFile}. Regenerating audio.");
+                            Console.WriteLine($"Audio file not found for {Path.GetFileName(xmlFile)}. Regenerating audio.");
                         }
                     }
                     else
@@ -98,7 +128,7 @@ namespace TextToSpeechApiDemo
 
                 if (needsAudioGeneration)
                 {
-                    GenerateAudio(xmlFile, outputFilePath);
+                    GenerateAudio(xmlFile, outputFilePath, config);
                 }
 
                 // Remove the CWD from the paths for display.
@@ -113,6 +143,51 @@ namespace TextToSpeechApiDemo
                 string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
                 Console.WriteLine($"Error processing '{relativeXmlPath}': {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Generates an audio file from an SSML file.
+        /// </summary>
+        /// <param name="xmlFile">The path to the XML file containing SSML.</param>
+        /// <param name="outputFilePath">The path to save the generated audio file.</param>
+        /// <param name="config">The TextToSpeech configuration.</param>
+        static void GenerateAudio(string xmlFile, string outputFilePath, TextToSpeechConfig config)
+        {
+            // Read the SSML content from the XML file.
+            string ssmlText = File.ReadAllText(xmlFile);
+
+            // Create the TextToSpeech client.
+            var client = TextToSpeechClient.Create();
+
+            // The input to be synthesized, now using the SSML text.
+            var input = new SynthesisInput
+            {
+                Ssml = ssmlText
+            };
+
+            // Build the voice request.
+            var voiceSelection = new VoiceSelectionParams
+            {
+                LanguageCode = config.LanguageCode,
+                Name = config.VoiceName,
+                SsmlGender = config.SsmlGender
+            };
+
+            // Specify the type of audio file.
+            var audioConfig = new AudioConfig
+            {
+                AudioEncoding = config.AudioEncoding
+            };
+
+            // Perform the text-to-speech request.
+            var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
+
+            // Write the response to the output file.
+            using (var output = File.Create(outputFilePath))
+            {
+                response.AudioContent.WriteTo(output);
+            }
+            Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
         }
 
         /// <summary>
@@ -182,50 +257,50 @@ namespace TextToSpeechApiDemo
             File.Copy(xmlFile, snapshotPath, true); //overwrite if exist
             Console.WriteLine($"Snapshot created: snapshots/{snapshotFilename}");
         }
-        
 
-                /// <summary>
-        /// Generates an audio file from an SSML file.
+        /// <summary>
+        /// Loads the TextToSpeech configuration from config.json.
         /// </summary>
-        /// <param name="xmlFile">The path to the XML file containing SSML.</param>
-        /// <param name="outputFilePath">The path to save the generated audio file.</param>
-        static void GenerateAudio(string xmlFile, string outputFilePath)
+        /// <param name="configDirectory">The directory where config.json is located.</param>
+        /// <returns>The TextToSpeech configuration.</returns>
+        static TextToSpeechConfig LoadTextToSpeechConfig(string configDirectory)
         {
-            // Read the SSML content from the XML file.
-            string ssmlText = File.ReadAllText(xmlFile);
+            string configFilePath = Path.Combine(configDirectory, "config.json");
 
-            // Create the TextToSpeech client.
-            var client = TextToSpeechClient.Create();
-
-            // The input to be synthesized, now using the SSML text.
-            var input = new SynthesisInput
+            // Create default config file if not exist
+            if (!File.Exists(configFilePath))
             {
-                Ssml = ssmlText
-            };
-
-            // Build the voice request.
-            var voiceSelection = new VoiceSelectionParams
-            {
-                LanguageCode = "vi-VN",
-                Name = "vi-VN-Wavenet-A",
-                SsmlGender = SsmlVoiceGender.Female
-            };
-
-            // Specify the type of audio file.
-            var audioConfig = new AudioConfig
-            {
-                AudioEncoding = AudioEncoding.Mp3
-            };
-
-            // Perform the text-to-speech request.
-            var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
-
-            // Write the response to the output file.
-            using (var output = File.Create(outputFilePath))
-            {
-                response.AudioContent.WriteTo(output);
+                Console.WriteLine($"Config file not found at '{configFilePath}'. Creating a default one.");
+                var defaultConfig = new TextToSpeechConfig();
+                // Use the cached instance here
+                string jsonString = JsonSerializer.Serialize(defaultConfig, _jsonSerializerOptions);
+                File.WriteAllText(configFilePath, jsonString);
             }
-            Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
+
+            try
+            {
+                string jsonString = File.ReadAllText(configFilePath);
+                return JsonSerializer.Deserialize<TextToSpeechConfig>(jsonString, _jsonSerializerOptions) ?? new TextToSpeechConfig();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading or parsing config file: {ex.Message}");
+                Console.WriteLine("Using default configuration.");
+                return new TextToSpeechConfig();
+            }
         }
+
+        /// <summary>
+        /// The TextToSpeech configuration.
+        /// </summary>
+        public class TextToSpeechConfig
+        {
+            public string LanguageCode { get; set; } = "vi-VN";
+            public string VoiceName { get; set; } = "vi-VN-Wavenet-A";
+            public SsmlVoiceGender SsmlGender { get; set; } = SsmlVoiceGender.Female;
+            // Use OggOpus for better quality with a smaller size even at the same bitrate to mp3.
+            public AudioEncoding AudioEncoding { get; set; } = AudioEncoding.OggOpus;
+        }
+
     }
 }
