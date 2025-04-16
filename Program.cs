@@ -1,4 +1,4 @@
-using Google.Cloud.TextToSpeech.V1;
+﻿using Google.Cloud.TextToSpeech.V1;
 using System;
 using System.IO;
 
@@ -62,7 +62,7 @@ namespace TextToSpeechApiDemo
             {
                 response.AudioContent.WriteTo(output);
             }
-            Console.WriteLine("Audio content written to file \"output.mp3\"");
+            Console.WriteLine($"Audio file: \"{outputFileName}\"");
         }
     }
 }
