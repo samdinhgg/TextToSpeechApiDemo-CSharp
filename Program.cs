@@ -200,6 +200,10 @@ namespace TextToSpeechApiDemo
             }
         }
 
+        /// <summary>
+        /// Creates a new snapshot file for a given XML file.
+        /// </summary>
+        /// <param name="xmlFile">The path to the XML file.</param>
         static void CreateSnapshot(string xmlFile, string snapshotDirectory)
         {
             string xmlNameBase = Path.GetFileNameWithoutExtension(xmlFile);
