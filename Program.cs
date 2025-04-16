@@ -9,6 +9,10 @@ namespace TextToSpeechApiDemo
 {
     class Program
     {
+        /// <summary>
+        /// The main entry point of the program.
+        /// </summary>
+        /// <param name="args">Command-line arguments (not used).</param>
         static void Main(string[] args)
         {
             Console.WriteLine("Welcome.\nThe program will read all the files under `texts/` and \nconvert to audio files and place under `audio/`.\n");
