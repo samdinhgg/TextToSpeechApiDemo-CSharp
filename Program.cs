@@ -1,6 +1,7 @@
 ﻿using Google.Cloud.TextToSpeech.V1;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Google.Cloud.Logging.Type;
 
 namespace TextToSpeechApiDemo
 {
@@ -15,6 +16,8 @@ namespace TextToSpeechApiDemo
         /// <param name="args">Command-line arguments (not used).</param>
         static void Main(string[] args)
         {
+            CloudLogger.Log("Application started.", LogSeverity.Info);
+
             Console.WriteLine("Welcome.\nThe program will read all the files under `texts/` and \nconvert to audio files and place under `audio/`.\n");
 
             // Directory for the SSML text files.
@@ -38,6 +41,7 @@ namespace TextToSpeechApiDemo
             if (!Directory.Exists(textsDirectory))
             {
                 Console.WriteLine($"Error: Texts directory not found at '{textsDirectory}'.");
+                CloudLogger.Log($"Error: Texts directory not found at '{textsDirectory}'.", LogSeverity.Error);
                 return;
             }
 
@@ -53,6 +57,7 @@ namespace TextToSpeechApiDemo
                 ProcessXmlFile(xmlFile, audioDirectory, snapshotDirectory, config);
             }
             Console.WriteLine("Finished processing all files.");
+            CloudLogger.Log("Finished processing all files.", LogSeverity.Info);
         }
 
         /// <summary>
@@ -66,7 +71,9 @@ namespace TextToSpeechApiDemo
 
         {
             string fileExtension;
-            Console.WriteLine($"Processing: {Path.GetFileName(xmlFile)}");
+            string fileName = Path.GetFileName(xmlFile);
+            Console.WriteLine($"Processing: {fileName}");
+            CloudLogger.Log($"Processing: {fileName}", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
 
             // Use a switch statement to determine the file extension based on the AudioEncoding enum.
             switch (config.AudioEncoding)
@@ -79,6 +86,7 @@ namespace TextToSpeechApiDemo
                     break;
                 default:
                     Console.WriteLine($"Warning: Unsupported audio encoding '{config.AudioEncoding}'. Defaulting to .mp3");
+                    CloudLogger.Log($"Warning: Unsupported audio encoding '{config.AudioEncoding}'. Defaulting to .mp3", LogSeverity.Warning, new Dictionary<string, string> { { "audio_encoding", config.AudioEncoding.ToString() } });
                     fileExtension = ".mp3";
                     break;
             }
@@ -99,30 +107,37 @@ namespace TextToSpeechApiDemo
                     string latestHash = CalculateFileHash(latestSnapshot);
                     if (currentHash == latestHash)
                     {
-                        Console.WriteLine($"No changes detected in {Path.GetFileName(xmlFile)} since last snapshot.");
+                        Console.WriteLine($"No changes detected in {fileName} since last snapshot.");
+                        CloudLogger.Log($"No changes detected in {fileName} since last snapshot.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
 
                         if (File.Exists(outputFilePath))
                         {
-                            Console.WriteLine($"Audio file already exists for {Path.GetFileName(xmlFile)}. Skipping audio generation.");
+                            Console.WriteLine($"Audio file already exists for {fileName}. Skipping audio generation.");
+                            CloudLogger.Log($"Audio file already exists for {fileName}. Skipping audio generation.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
                             needsAudioGeneration = false;
                         }
                         else
                         {
-                            Console.WriteLine($"Audio file not found for {Path.GetFileName(xmlFile)}. Regenerating audio.");
+                            Console.WriteLine($"Audio file not found for {fileName}. Regenerating audio.");
+                            CloudLogger.Log($"Audio file not found for {fileName}. Regenerating audio.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"Changes detected in {Path.GetFileName(xmlFile)} since last snapshot.");
-                        Console.WriteLine($"Creating new snapshot for {Path.GetFileName(xmlFile)}.");
+                        Console.WriteLine($"Changes detected in {fileName} since last snapshot.");
+                        CloudLogger.Log($"Changes detected in {fileName} since last snapshot.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
+                        Console.WriteLine($"Creating new snapshot for {fileName}.");
+                        CloudLogger.Log($"Creating new snapshot for {fileName}.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
                         CreateSnapshot(xmlFile, snapshotDirectory);
                     }
                 }
                 else
                 {
                     // Remove the CWD from the paths for display.
-                    Console.WriteLine($"No previous snapshots found for {Path.GetFileName(xmlFile)}.");
-                    Console.WriteLine($"Creating new snapshot for {Path.GetFileName(xmlFile)}.");
+                    Console.WriteLine($"No previous snapshots found for {fileName}.");
+                    CloudLogger.Log($"No previous snapshots found for {fileName}.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
+                    Console.WriteLine($"Creating new snapshot for {fileName}.");
+                    CloudLogger.Log($"Creating new snapshot for {fileName}.", LogSeverity.Info, new Dictionary<string, string> { { "file_name", fileName } });
                     CreateSnapshot(xmlFile, snapshotDirectory);
                 }
 
@@ -132,16 +147,18 @@ namespace TextToSpeechApiDemo
                 }
 
                 // Remove the CWD from the paths for display.
-                string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                string relativeXmlPath = "texts/" + fileName;
                 string relativeOutputPath = "audio/" + outputFileName;
 
                 Console.WriteLine($"Processed: '{relativeXmlPath}' -> '{relativeOutputPath}'");
+                CloudLogger.Log($"Processed: '{relativeXmlPath}' -> '{relativeOutputPath}'", LogSeverity.Info, new Dictionary<string, string> { { "xml_file", relativeXmlPath }, { "audio_file", relativeOutputPath } });
             }
             catch (Exception ex)
             {
                 // Remove the CWD from the path for display.
-                string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                string relativeXmlPath = "texts/" + fileName;
                 Console.WriteLine($"Error processing '{relativeXmlPath}': {ex.Message}");
+                CloudLogger.Log($"Error processing '{relativeXmlPath}': {ex.Message}", LogSeverity.Error, new Dictionary<string, string> { { "xml_file", relativeXmlPath }, { "error_message", ex.Message } });
             }
         }
 
@@ -188,6 +205,7 @@ namespace TextToSpeechApiDemo
                 response.AudioContent.WriteTo(output);
             }
             Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
+            CloudLogger.Log($"Audio generated: {Path.GetFileName(outputFilePath)}", LogSeverity.Info, new Dictionary<string, string> { { "audio_file", Path.GetFileName(outputFilePath) } });
         }
 
         /// <summary>
@@ -225,6 +243,7 @@ namespace TextToSpeechApiDemo
                     catch (FormatException)
                     {
                         Console.WriteLine($"Warning: Invalid snapshot filename format: {filename}");
+                        CloudLogger.Log($"Warning: Invalid snapshot filename format: {filename}", LogSeverity.Warning, new Dictionary<string, string> { { "file_name", filename } });
                     }
                 }
             }
@@ -256,6 +275,7 @@ namespace TextToSpeechApiDemo
             string snapshotPath = Path.Combine(snapshotDirectory, snapshotFilename);
             File.Copy(xmlFile, snapshotPath, true); //overwrite if exist
             Console.WriteLine($"Snapshot created: snapshots/{snapshotFilename}");
+            CloudLogger.Log($"Snapshot created: snapshots/{snapshotFilename}", LogSeverity.Info, new Dictionary<string, string> { { "snapshot_file", snapshotFilename } });
         }
 
         /// <summary>
@@ -271,6 +291,7 @@ namespace TextToSpeechApiDemo
             if (!File.Exists(configFilePath))
             {
                 Console.WriteLine($"Config file not found at '{configFilePath}'. Creating a default one.");
+                CloudLogger.Log($"Config file not found at '{configFilePath}'. Creating a default one.", LogSeverity.Warning, new Dictionary<string, string> { { "config_file", configFilePath } });
                 var defaultConfig = new TextToSpeechConfig();
                 // Use the cached instance here
                 string jsonString = JsonSerializer.Serialize(defaultConfig, _jsonSerializerOptions);
@@ -285,7 +306,9 @@ namespace TextToSpeechApiDemo
             catch (Exception ex)
             {
                 Console.WriteLine($"Error reading or parsing config file: {ex.Message}");
+                CloudLogger.Log($"Error reading or parsing config file: {ex.Message}", LogSeverity.Error, new Dictionary<string, string> { { "config_file", configFilePath }, { "error_message", ex.Message } });
                 Console.WriteLine("Using default configuration.");
+                CloudLogger.Log("Using default configuration.", LogSeverity.Warning);
                 return new TextToSpeechConfig();
             }
         }
