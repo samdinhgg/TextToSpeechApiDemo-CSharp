@@ -1,0 +1,18 @@
+<speak>
+  <prosody rate="medium">
+    <p>Chào bạn đến với <emphasis level="strong">Trường Tiểu Học Nghĩa Đô</emphasis>.</p>
+  </prosody>
+  <break time="500ms"/>
+  <prosody rate="medium">
+    <p>Vui lòng cho biết <emphasis>thông tin cá nhân</emphasis> của bạn, bao gồm:
+    <break time="200ms"/>
+    Họ, <break time="150ms"/>
+    Tên, <break time="150ms"/>
+    Số điện thoại, <break time="150ms"/>
+    và <emphasis>lý do</emphasis> vào cổng trường.</p>
+  </prosody>
+  <break time="400ms"/>
+  <prosody rate="medium">
+    <p><emphasis>Xin cảm ơn</emphasis>.</p>
+  </prosody>
+</speak>
