@@ -190,6 +190,11 @@ namespace TextToSpeechApiDemo
             return latestSnapshot;
         }
 
+        /// <summary>
+        /// Calculates the SHA-256 hash of a file.
+        /// </summary>
+        /// <param name="filePath">The path to the file.</param>
+        /// <returns>The SHA-256 hash of the file.</returns>
         static string CalculateFileHash(string filePath)
         {
             using (var sha256 = SHA256.Create())
