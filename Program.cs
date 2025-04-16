@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using Google.Cloud.Logging.Type;
+using System.Diagnostics;
 
 namespace TextToSpeechApiDemo
 {
@@ -196,16 +197,26 @@ namespace TextToSpeechApiDemo
                 AudioEncoding = config.AudioEncoding
             };
 
+            // Start the Stopwatch
+            var stopwatch = Stopwatch.StartNew();
+
             // Perform the text-to-speech request.
             var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
+
+            // Stop the Stopwatch
+            stopwatch.Stop();
+
+            TimeSpan duration = stopwatch.Elapsed;
+            double requestTimeMilliseconds = duration.TotalMilliseconds;
 
             // Write the response to the output file.
             using (var output = File.Create(outputFilePath))
             {
                 response.AudioContent.WriteTo(output);
             }
-            Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
-            CloudLogger.Log($"Audio generated: {Path.GetFileName(outputFilePath)}", LogSeverity.Info, new Dictionary<string, string> { { "audio_file", Path.GetFileName(outputFilePath) } });
+
+            Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)} (in {requestTimeMilliseconds} ms)");
+            CloudLogger.Log($"Audio generated: {Path.GetFileName(outputFilePath)} (in {requestTimeMilliseconds} ms)", LogSeverity.Info, new Dictionary<string, string> { { "audio_file", Path.GetFileName(outputFilePath) }, { "duration_ms", requestTimeMilliseconds.ToString() } });
         }
 
         /// <summary>
