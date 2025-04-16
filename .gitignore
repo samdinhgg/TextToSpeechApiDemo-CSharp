@@ -1,4 +1,5 @@
 obj/
 bin/
+snapshots/
 *.mp3
 *.wav
