@@ -4,5 +4,6 @@
     "terminal.integrated.cursorStyleInactive": "line",
     "editor.fontFamily": "Iosevka, Consolas, 'Courier New', monospace",
     "todo-tree.general.enableFileWatcher": true,
-    "todo-tree.general.statusBar": "total"
+    "todo-tree.general.statusBar": "total",
+    "workbench.colorTheme": "Default Dark Modern"
 }

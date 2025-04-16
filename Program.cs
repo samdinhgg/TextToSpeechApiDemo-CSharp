@@ -1,4 +1,9 @@
 ﻿using Google.Cloud.TextToSpeech.V1;
+using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace TextToSpeechApiDemo
 {
@@ -14,8 +19,12 @@ namespace TextToSpeechApiDemo
             // Directory for the output audio files.
             string audioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "audio");
 
-            // Create the "audio" directory if it doesn't exist.
+            // Directory for snapshots
+            string snapshotDirectory = Path.Combine(Directory.GetCurrentDirectory(), "snapshots");
+
+            // Create the "audio" and "snapshots" directories if they don't exist.
             Directory.CreateDirectory(audioDirectory);
+            Directory.CreateDirectory(snapshotDirectory);
 
             // Check if the texts directory exists.
             if (!Directory.Exists(textsDirectory))
@@ -30,19 +39,56 @@ namespace TextToSpeechApiDemo
             // Process each XML file.
             foreach (string xmlFile in xmlFiles)
             {
-                try
+                ProcessXmlFile(xmlFile, audioDirectory, snapshotDirectory);
+            }
+            Console.WriteLine("Finished processing all files.");
+        }
+
+        static void ProcessXmlFile(string xmlFile, string audioDirectory, string snapshotDirectory)
+        {
+            try
+            {
+                string baseFileName = Path.GetFileNameWithoutExtension(xmlFile);
+                string outputFileName = $"{baseFileName}.mp3";
+                string outputFilePath = Path.Combine(audioDirectory, outputFileName);
+
+                string latestSnapshot = GetLatestSnapshot(xmlFile, snapshotDirectory);
+                string currentHash = CalculateFileHash(xmlFile);
+
+                bool needsAudioGeneration = true;
+
+                if (latestSnapshot != null)
+                {
+                    string latestHash = CalculateFileHash(latestSnapshot);
+                    if (currentHash == latestHash)
+                    {
+                        Console.WriteLine($"No changes detected in {xmlFile} since last snapshot.");
+                        if (File.Exists(outputFilePath))
+                        {
+                            Console.WriteLine($"Audio file already exists for {xmlFile}. Skipping audio generation.");
+                            needsAudioGeneration = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Audio file not found for {xmlFile}. Regenerating audio.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Changes detected in {xmlFile} since last snapshot.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"No previous snapshots found for {xmlFile}.");
+                }
+
+                CreateSnapshot(xmlFile, snapshotDirectory);
+
+                if (needsAudioGeneration)
                 {
                     // Read the SSML content from the XML file.
                     string ssmlText = File.ReadAllText(xmlFile);
-
-                    // Extract the file name without the extension.
-                    string baseFileName = Path.GetFileNameWithoutExtension(xmlFile);
-
-                    // Create the output MP3 file name.
-                    string outputFileName = $"{baseFileName}.mp3";
-
-                    // Create the full output path.
-                    string outputFilePath = Path.Combine(audioDirectory, outputFileName);
 
                     // Create the TextToSpeech client.
                     var client = TextToSpeechClient.Create();
@@ -75,21 +121,72 @@ namespace TextToSpeechApiDemo
                     {
                         response.AudioContent.WriteTo(output);
                     }
-
-                    // Remove the CWD from the paths for display.
-                    string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
-                    string relativeOutputPath = "audio/" + outputFileName;
-
-                    Console.WriteLine($"Processed: '{relativeXmlPath}' -> '{relativeOutputPath}'");
+                    Console.WriteLine($"Audio generated: {outputFilePath}");
                 }
-                catch (Exception ex)
+
+                // Remove the CWD from the paths for display.
+                string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                string relativeOutputPath = "audio/" + outputFileName;
+
+                Console.WriteLine($"Processed: '{relativeXmlPath}' -> '{relativeOutputPath}'");
+            }
+            catch (Exception ex)
+            {
+                // Remove the CWD from the path for display.
+                string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                Console.WriteLine($"Error processing '{relativeXmlPath}': {ex.Message}");
+            }
+        }
+
+        static string GetLatestSnapshot(string xmlFile, string snapshotDirectory)
+        {
+            string xmlNameBase = Path.GetFileNameWithoutExtension(xmlFile);
+            string latestSnapshot = null;
+            DateTime latestTimestamp = DateTime.MinValue;
+
+            foreach (string filename in Directory.GetFiles(snapshotDirectory))
+            {
+                if (filename.StartsWith(Path.Combine(snapshotDirectory, xmlNameBase + "-")) && filename.EndsWith(".xml"))
                 {
-                    // Remove the CWD from the path for display.
-                    string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
-                    Console.WriteLine($"Error processing '{relativeXmlPath}': {ex.Message}");
+                    try
+                    {
+                        string timestampStr = Path.GetFileName(filename).Substring(xmlNameBase.Length + 1, 19);
+                        DateTime timestamp = DateTime.ParseExact(timestampStr, "yyyy-MM-dd-HH-mm-ss", null);
+                        if (timestamp > latestTimestamp)
+                        {
+                            latestTimestamp = timestamp;
+                            latestSnapshot = filename;
+                        }
+                    }
+                    catch (FormatException)
+                    {
+                        Console.WriteLine($"Warning: Invalid snapshot filename format: {filename}");
+                    }
                 }
             }
-            Console.WriteLine("Finished processing all files.");
+            return latestSnapshot;
+        }
+
+        static string CalculateFileHash(string filePath)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                using (var stream = File.OpenRead(filePath))
+                {
+                    byte[] hashBytes = sha256.ComputeHash(stream);
+                    return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                }
+            }
+        }
+
+        static void CreateSnapshot(string xmlFile, string snapshotDirectory)
+        {
+            string xmlNameBase = Path.GetFileNameWithoutExtension(xmlFile);
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            string snapshotFilename = $"{xmlNameBase}-{timestamp}.xml";
+            string snapshotPath = Path.Combine(snapshotDirectory, snapshotFilename);
+            File.Copy(xmlFile, snapshotPath, true); //overwrite if exist
+            Console.WriteLine($"Snapshot created: {snapshotPath}");
         }
     }
 }
