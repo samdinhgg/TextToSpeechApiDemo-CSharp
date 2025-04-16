@@ -98,41 +98,7 @@ namespace TextToSpeechApiDemo
 
                 if (needsAudioGeneration)
                 {
-                    // Read the SSML content from the XML file.
-                    string ssmlText = File.ReadAllText(xmlFile);
-
-                    // Create the TextToSpeech client.
-                    var client = TextToSpeechClient.Create();
-
-                    // The input to be synthesized, now using the SSML text.
-                    var input = new SynthesisInput
-                    {
-                        Ssml = ssmlText
-                    };
-
-                    // Build the voice request.
-                    var voiceSelection = new VoiceSelectionParams
-                    {
-                        LanguageCode = "vi-VN",
-                        Name = "vi-VN-Wavenet-A",
-                        SsmlGender = SsmlVoiceGender.Female
-                    };
-
-                    // Specify the type of audio file.
-                    var audioConfig = new AudioConfig
-                    {
-                        AudioEncoding = AudioEncoding.Mp3
-                    };
-
-                    // Perform the text-to-speech request.
-                    var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
-
-                    // Write the response to the output file.
-                    using (var output = File.Create(outputFilePath))
-                    {
-                        response.AudioContent.WriteTo(output);
-                    }
-                    Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
+                    GenerateAudio(xmlFile, outputFilePath);
                 }
 
                 // Remove the CWD from the paths for display.
@@ -215,6 +181,51 @@ namespace TextToSpeechApiDemo
             string snapshotPath = Path.Combine(snapshotDirectory, snapshotFilename);
             File.Copy(xmlFile, snapshotPath, true); //overwrite if exist
             Console.WriteLine($"Snapshot created: snapshots/{snapshotFilename}");
+        }
+        
+
+                /// <summary>
+        /// Generates an audio file from an SSML file.
+        /// </summary>
+        /// <param name="xmlFile">The path to the XML file containing SSML.</param>
+        /// <param name="outputFilePath">The path to save the generated audio file.</param>
+        static void GenerateAudio(string xmlFile, string outputFilePath)
+        {
+            // Read the SSML content from the XML file.
+            string ssmlText = File.ReadAllText(xmlFile);
+
+            // Create the TextToSpeech client.
+            var client = TextToSpeechClient.Create();
+
+            // The input to be synthesized, now using the SSML text.
+            var input = new SynthesisInput
+            {
+                Ssml = ssmlText
+            };
+
+            // Build the voice request.
+            var voiceSelection = new VoiceSelectionParams
+            {
+                LanguageCode = "vi-VN",
+                Name = "vi-VN-Wavenet-A",
+                SsmlGender = SsmlVoiceGender.Female
+            };
+
+            // Specify the type of audio file.
+            var audioConfig = new AudioConfig
+            {
+                AudioEncoding = AudioEncoding.Mp3
+            };
+
+            // Perform the text-to-speech request.
+            var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
+
+            // Write the response to the output file.
+            using (var output = File.Create(outputFilePath))
+            {
+                response.AudioContent.WriteTo(output);
+            }
+            Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
         }
     }
 }
