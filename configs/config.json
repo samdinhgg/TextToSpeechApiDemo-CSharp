@@ -1,0 +1,21 @@
+{
+    "id": "001",
+    "name": "Nghia-Do-Middle-School",
+    "configs": {
+        "input": {
+            "sslmFile": "ssml_option1"
+        },
+        "voice": {
+            "languageCode": "vi-VN",
+            "name": "vi-VN-Wavenet-A",
+            "ssmlGender": "FEMALE"
+        },
+        "audioConfig": {
+            "audioEncoding": "OGG_OPUS",
+            "speakingRate": 0.30,
+            "pitch": 10.0,
+            "sampleRateHertz": 2000,
+            "volumeGainDb": 0.0
+        }
+    }
+}
