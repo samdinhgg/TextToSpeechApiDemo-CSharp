@@ -53,8 +53,12 @@ namespace TextToSpeechApiDemo
             // Perform the text-to-speech request.
             var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
 
-            // Write the response to the output file.
-            using (var output = File.Create("output.mp3"))
+            // Generate the dynamic file name.
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            string outputFileName = $"{timestamp}.mp3";
+
+            // Write the response to the output file with the dynamic name.
+            using (var output = File.Create(outputFileName))
             {
                 response.AudioContent.WriteTo(output);
             }
