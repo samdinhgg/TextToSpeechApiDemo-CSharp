@@ -1,6 +1,4 @@
 ﻿using Google.Cloud.TextToSpeech.V1;
-using System;
-using System.IO;
 
 namespace TextToSpeechApiDemo
 {
@@ -8,69 +6,90 @@ namespace TextToSpeechApiDemo
     {
         static void Main(string[] args)
         {
-            // The SSML text.
-            var ssmlText = @"
-<speak>
-  <prosody rate=""medium"">
-    Chào bạn, <break time=""300ms""/> đến với <emphasis level=""strong"">Trường Tiểu Học Nghĩa Đô</emphasis>.
-  </prosody>
-  <break time=""500ms""/>
-  <prosody rate=""medium"">
-    Vui lòng cho biết <emphasis>thông tin cá nhân</emphasis> của bạn, bao gồm:
-    <break time=""200ms""/>
-    Họ, <break time=""150ms""/>
-    Tên, <break time=""150ms""/>
-    Số điện thoại, <break time=""150ms""/>
-    và <emphasis>lý do</emphasis> vào cổng trường.
-  </prosody>
-  <break time=""400ms""/>
-  <prosody rate=""medium"">
-    <emphasis>Xin cảm ơn</emphasis>.
-  </prosody>
-</speak>";
+            Console.WriteLine("Welcome.\nThe program will read all the files under `texts/` and \nconvert to audio files and place under `audio/`.\n");
 
-            var client = TextToSpeechClient.Create();
+            // Directory for the SSML text files.
+            string textsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "texts");
 
-            // The input to be synthesized, now using the SSML text.
-            var input = new SynthesisInput
-            {
-                Ssml = ssmlText
-            };
-
-            // Build the voice request.
-            var voiceSelection = new VoiceSelectionParams
-            {
-                LanguageCode = "vi-VN",
-                Name = "vi-VN-Wavenet-A",
-                SsmlGender = SsmlVoiceGender.Female
-            };
-
-            // Specify the type of audio file.
-            var audioConfig = new AudioConfig
-            {
-                AudioEncoding = AudioEncoding.Mp3
-            };
-
-            // Perform the text-to-speech request.
-            var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
-
-            // Generate the dynamic file name.
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            string outputFileName = $"{timestamp}.mp3";
+            // Directory for the output audio files.
+            string audioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "audio");
 
             // Create the "audio" directory if it doesn't exist.
-            string audioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "audio");
             Directory.CreateDirectory(audioDirectory);
 
-            // Combine the directory and file name to get the full output path.
-            string outputFilePath = Path.Combine(audioDirectory, outputFileName);
-
-            // Write the response to the output file with the dynamic name.
-            using (var output = File.Create(outputFilePath))
+            // Check if the texts directory exists.
+            if (!Directory.Exists(textsDirectory))
             {
-                response.AudioContent.WriteTo(output);
+                Console.WriteLine($"Error: Texts directory not found at '{textsDirectory}'.");
+                return;
             }
-            Console.WriteLine($"Audio file: \"{outputFileName}\"");
+
+            // Get all .xml files in the texts directory.
+            string[] xmlFiles = Directory.GetFiles(textsDirectory, "*.xml");
+
+            // Process each XML file.
+            foreach (string xmlFile in xmlFiles)
+            {
+                try
+                {
+                    // Read the SSML content from the XML file.
+                    string ssmlText = File.ReadAllText(xmlFile);
+
+                    // Extract the file name without the extension.
+                    string baseFileName = Path.GetFileNameWithoutExtension(xmlFile);
+
+                    // Create the output MP3 file name.
+                    string outputFileName = $"{baseFileName}.mp3";
+
+                    // Create the full output path.
+                    string outputFilePath = Path.Combine(audioDirectory, outputFileName);
+
+                    // Create the TextToSpeech client.
+                    var client = TextToSpeechClient.Create();
+
+                    // The input to be synthesized, now using the SSML text.
+                    var input = new SynthesisInput
+                    {
+                        Ssml = ssmlText
+                    };
+
+                    // Build the voice request.
+                    var voiceSelection = new VoiceSelectionParams
+                    {
+                        LanguageCode = "vi-VN",
+                        Name = "vi-VN-Wavenet-A",
+                        SsmlGender = SsmlVoiceGender.Female
+                    };
+
+                    // Specify the type of audio file.
+                    var audioConfig = new AudioConfig
+                    {
+                        AudioEncoding = AudioEncoding.Mp3
+                    };
+
+                    // Perform the text-to-speech request.
+                    var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
+
+                    // Write the response to the output file.
+                    using (var output = File.Create(outputFilePath))
+                    {
+                        response.AudioContent.WriteTo(output);
+                    }
+
+                    // Remove the CWD from the paths for display.
+                    string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                    string relativeOutputPath = "audio/" + outputFileName;
+
+                    Console.WriteLine($"Processed: '{relativeXmlPath}' -> '{relativeOutputPath}'");
+                }
+                catch (Exception ex)
+                {
+                    // Remove the CWD from the path for display.
+                    string relativeXmlPath = "texts/" + Path.GetFileName(xmlFile);
+                    Console.WriteLine($"Error processing '{relativeXmlPath}': {ex.Message}");
+                }
+            }
+            Console.WriteLine("Finished processing all files.");
         }
     }
 }
