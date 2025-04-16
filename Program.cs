@@ -8,12 +8,13 @@ namespace TextToSpeechApiDemo
     {
         static void Main(string[] args)
         {
+            var text = "Xin chào. Vui lòng cung cấp thông tin cá nhân, bao gồm Họ, Tên và Số điện thoại trước khi vào cổng trường.";
             var client = TextToSpeechClient.Create();
 
             // The input to be synthesized, can be provided as text or SSML.
             var input = new SynthesisInput
             {
-                Text = "Xin chào. Vui lòng cung cấp thông tin cá nhân, bao gồm Họ, Tên và Số điện thoại trước khi vào cổng trường."
+                Ssml = $"<speak><prosody rate=\"medium\">{text}</prosody></speak>"
             };
 
             // Build the voice request.
