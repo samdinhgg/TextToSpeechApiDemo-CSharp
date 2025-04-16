@@ -8,13 +8,32 @@ namespace TextToSpeechApiDemo
     {
         static void Main(string[] args)
         {
-            var text = "Xin chào. Vui lòng cung cấp thông tin cá nhân, bao gồm Họ, Tên và Số điện thoại trước khi vào cổng trường.";
+            var ssmlText = @"
+<speak>
+  <prosody rate=""medium"">
+    Chào bạn, <break time=""300ms""/> đến với <emphasis level=""strong"">Trường Tiểu Học Nghĩa Đô</emphasis>.
+  </prosody>
+  <break time=""500ms""/>
+  <prosody rate=""medium"">
+    Vui lòng cho biết <emphasis>thông tin cá nhân</emphasis> của bạn, bao gồm:
+    <break time=""200ms""/>
+    Họ, <break time=""150ms""/>
+    Tên, <break time=""150ms""/>
+    Số điện thoại, <break time=""150ms""/>
+    và <emphasis>lý do</emphasis> vào cổng trường.
+  </prosody>
+  <break time=""400ms""/>
+  <prosody rate=""medium"">
+    <emphasis>Xin cảm ơn</emphasis>.
+  </prosody>
+</speak>";
+
             var client = TextToSpeechClient.Create();
 
             // The input to be synthesized, can be provided as text or SSML.
             var input = new SynthesisInput
             {
-                Ssml = $"<speak><prosody rate=\"medium\">{text}</prosody></speak>"
+                Ssml = ssmlText
             };
 
             // Build the voice request.
@@ -32,7 +51,7 @@ namespace TextToSpeechApiDemo
 
             // Perform the text-to-speech request.
             var response = client.SynthesizeSpeech(input, voiceSelection, audioConfig);
-            
+
             // Write the response to the output file.
             using (var output = File.Create("output.mp3"))
             {
