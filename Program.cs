@@ -1,4 +1,4 @@
-﻿using Google.Cloud.TextToSpeech.V1;
+using Google.Cloud.TextToSpeech.V1;
 using System;
 using System.IO;
 
@@ -8,6 +8,7 @@ namespace TextToSpeechApiDemo
     {
         static void Main(string[] args)
         {
+            // The SSML text.
             var ssmlText = @"
 <speak>
   <prosody rate=""medium"">
@@ -30,7 +31,7 @@ namespace TextToSpeechApiDemo
 
             var client = TextToSpeechClient.Create();
 
-            // The input to be synthesized, can be provided as text or SSML.
+            // The input to be synthesized, now using the SSML text.
             var input = new SynthesisInput
             {
                 Ssml = ssmlText
