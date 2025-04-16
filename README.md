@@ -1,6 +1,29 @@
 # TextToSpeechApiDemo-CSharp
 
-- A simple program to demo TTS APIs with GCP in CSharp.
+- A simple program to demo Cloud Text-to-Speech (TTS) APIs in CSharp.
+
+TL;DR
+
+- The project demonstrates:
+  - How to utilize TTS API in CSharp.
+  - How to submit texts with SSML markup language.
+- Simply clone the project to your Cloud Shell instance and build and run.
+- Output audio files will be saved to the `audio` folder.
+- Open output audio files within Cloud Shell Editor to listen to play.
+
+In short, you don't need to leave your Cloud Shell to complete all the tasks.
+
+## Why Cloud Shell
+
+* **Authentication:** Cloud Shell automatically handles authentication with your Google Cloud account, so you don't need to set up any credentials manually.
+* **Ready to use IDE:** Cloud Shell Editor or VSCODE OSS version is familiar to developers.
+
+## Important Notes
+
+* **GCP Project:** Ensure that you have selected the correct GCP project in Cloud Shell that has the Cloud Text-to-Speech API enabled.
+* **API Enablement:** Make sure the **Cloud Text-to-Speech API** is enabled for your project. You can enable it in the Google Cloud Console.
+* **SSML:** You can modify the SSML text in the `texts` folder to test different scenarios.
+* **Cost:** Using Cloud Shell is free, but using the Text-to-Speech API might incur costs depending on your usage. Please refer to the GCP pricing page.
 
 ## How to start this Demo with Cloud Shell
 
@@ -45,16 +68,8 @@ This demo is designed to be easily run and tested within Google Cloud Shell, whi
         dotnet run --project TextToSpeechApiDemo
         ```
 
-7. **Interact with the application:**
-    * The application will run and you can interact with it. The application will use the default credential of the Cloud Shell.
-
-**Why Cloud Shell and Important Notes**
-
-* **Authentication:** Cloud Shell automatically handles authentication with your Google Cloud account, so you don't need to set up any credentials manually.
-* **GCP Project:** Ensure that you have selected the correct GCP project in Cloud Shell that has the Cloud Text-to-Speech API enabled.
-* **API Enablement:** Make sure the Cloud Text-to-Speech API is enabled for your project. You can enable it in the Google Cloud Console.
-* **SSML:** You can modify the SSML text in the `texts` folder to test different scenarios.
-* **Cost:** Using Cloud Shell is free, but using the Text-to-Speech API might incur costs depending on your usage. Please refer to the GCP pricing page.
+7. **Application Credential**
+    * The application will use the default credential of the Cloud Shell, no further action is needed.
 
 ## A sample SSML text
 
