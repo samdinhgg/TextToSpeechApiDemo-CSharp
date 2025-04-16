@@ -69,11 +69,11 @@ namespace TextToSpeechApiDemo
                     string latestHash = CalculateFileHash(latestSnapshot);
                     if (currentHash == latestHash)
                     {
-                        Console.WriteLine($"No changes detected in {xmlFile} since last snapshot.");
+                        Console.WriteLine($"No changes detected in {Path.GetFileName(xmlFile)} since last snapshot.");
 
                         if (File.Exists(outputFilePath))
                         {
-                            Console.WriteLine($"Audio file already exists for {xmlFile}. Skipping audio generation.");
+                            Console.WriteLine($"Audio file already exists for {Path.GetFileName(xmlFile)}. Skipping audio generation.");
                             needsAudioGeneration = false;
                         }
                         else
@@ -83,15 +83,16 @@ namespace TextToSpeechApiDemo
                     }
                     else
                     {
-                        Console.WriteLine($"Changes detected in {xmlFile} since last snapshot.");
-                        Console.WriteLine($"Creating new snapshot for {xmlFile}.");
+                        Console.WriteLine($"Changes detected in {Path.GetFileName(xmlFile)} since last snapshot.");
+                        Console.WriteLine($"Creating new snapshot for {Path.GetFileName(xmlFile)}.");
                         CreateSnapshot(xmlFile, snapshotDirectory);
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"No previous snapshots found for {xmlFile}.");
-                    Console.WriteLine($"Creating new snapshot for {xmlFile}.");
+                    // Remove the CWD from the paths for display.
+                    Console.WriteLine($"No previous snapshots found for {Path.GetFileName(xmlFile)}.");
+                    Console.WriteLine($"Creating new snapshot for {Path.GetFileName(xmlFile)}.");
                     CreateSnapshot(xmlFile, snapshotDirectory);
                 }
 
@@ -131,7 +132,7 @@ namespace TextToSpeechApiDemo
                     {
                         response.AudioContent.WriteTo(output);
                     }
-                    Console.WriteLine($"Audio generated: {outputFilePath}");
+                    Console.WriteLine($"Audio generated: {Path.GetFileName(outputFilePath)}");
                 }
 
                 // Remove the CWD from the paths for display.
@@ -206,7 +207,7 @@ namespace TextToSpeechApiDemo
             string snapshotFilename = $"{xmlNameBase}-{timestamp}.xml";
             string snapshotPath = Path.Combine(snapshotDirectory, snapshotFilename);
             File.Copy(xmlFile, snapshotPath, true); //overwrite if exist
-            Console.WriteLine($"Snapshot created: {snapshotPath}");
+            Console.WriteLine($"Snapshot created: snapshots/{snapshotFilename}");
         }
     }
 }
