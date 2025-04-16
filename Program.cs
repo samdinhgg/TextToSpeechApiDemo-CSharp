@@ -41,6 +41,7 @@ namespace TextToSpeechApiDemo
             var voiceSelection = new VoiceSelectionParams
             {
                 LanguageCode = "vi-VN",
+                Name = "vi-VN-Wavenet-A",
                 SsmlGender = SsmlVoiceGender.Female
             };
 
@@ -57,8 +58,15 @@ namespace TextToSpeechApiDemo
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             string outputFileName = $"{timestamp}.mp3";
 
+            // Create the "audio" directory if it doesn't exist.
+            string audioDirectory = Path.Combine(Directory.GetCurrentDirectory(), "audio");
+            Directory.CreateDirectory(audioDirectory);
+
+            // Combine the directory and file name to get the full output path.
+            string outputFilePath = Path.Combine(audioDirectory, outputFileName);
+
             // Write the response to the output file with the dynamic name.
-            using (var output = File.Create(outputFileName))
+            using (var output = File.Create(outputFilePath))
             {
                 response.AudioContent.WriteTo(output);
             }
