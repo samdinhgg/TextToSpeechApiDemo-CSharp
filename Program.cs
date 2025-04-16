@@ -44,7 +44,14 @@ namespace TextToSpeechApiDemo
             Console.WriteLine("Finished processing all files.");
         }
 
+        /// <summary>
+        /// Processes a single XML file, generating an audio file if necessary.
+        /// </summary>
+        /// <param name="xmlFile">The path to the XML file.</param>
+        /// <param name="audioDirectory">The directory where audio files will be saved.</param>
+        /// <param name="snapshotDirectory">The directory where snapshots will be saved.</param>
         static void ProcessXmlFile(string xmlFile, string audioDirectory, string snapshotDirectory)
+
         {
             try
             {
@@ -52,7 +59,7 @@ namespace TextToSpeechApiDemo
                 string outputFileName = $"{baseFileName}.mp3";
                 string outputFilePath = Path.Combine(audioDirectory, outputFileName);
 
-                string latestSnapshot = GetLatestSnapshot(xmlFile, snapshotDirectory);
+                string? latestSnapshot = GetLatestSnapshot(xmlFile, snapshotDirectory);
                 string currentHash = CalculateFileHash(xmlFile);
 
                 bool needsAudioGeneration = true;
@@ -63,6 +70,7 @@ namespace TextToSpeechApiDemo
                     if (currentHash == latestHash)
                     {
                         Console.WriteLine($"No changes detected in {xmlFile} since last snapshot.");
+
                         if (File.Exists(outputFilePath))
                         {
                             Console.WriteLine($"Audio file already exists for {xmlFile}. Skipping audio generation.");
@@ -76,14 +84,16 @@ namespace TextToSpeechApiDemo
                     else
                     {
                         Console.WriteLine($"Changes detected in {xmlFile} since last snapshot.");
+                        Console.WriteLine($"Creating new snapshot for {xmlFile}.");
+                        CreateSnapshot(xmlFile, snapshotDirectory);
                     }
                 }
                 else
                 {
                     Console.WriteLine($"No previous snapshots found for {xmlFile}.");
+                    Console.WriteLine($"Creating new snapshot for {xmlFile}.");
+                    CreateSnapshot(xmlFile, snapshotDirectory);
                 }
-
-                CreateSnapshot(xmlFile, snapshotDirectory);
 
                 if (needsAudioGeneration)
                 {
@@ -138,11 +148,23 @@ namespace TextToSpeechApiDemo
             }
         }
 
-        static string GetLatestSnapshot(string xmlFile, string snapshotDirectory)
+        /// <summary>
+        /// Gets the path to the latest snapshot file for a given XML file.
+        /// </summary>
+        /// <param name="xmlFile">The path to the XML file.</param>
+        /// <param name="snapshotDirectory">The directory where snapshots are stored.</param>
+        /// <returns>The path to the latest snapshot file, or <c>null</c> if no snapshots exist.</returns>
+        static string? GetLatestSnapshot(string xmlFile, string snapshotDirectory)
         {
             string xmlNameBase = Path.GetFileNameWithoutExtension(xmlFile);
-            string latestSnapshot = null;
+            string? latestSnapshot = null;
             DateTime latestTimestamp = DateTime.MinValue;
+
+            // Early exit if no files are found in the snapshot directory.
+            if (!Directory.EnumerateFiles(snapshotDirectory).Any())
+            {
+                return null;
+            }
 
             foreach (string filename in Directory.GetFiles(snapshotDirectory))
             {
@@ -171,11 +193,9 @@ namespace TextToSpeechApiDemo
         {
             using (var sha256 = SHA256.Create())
             {
-                using (var stream = File.OpenRead(filePath))
-                {
-                    byte[] hashBytes = sha256.ComputeHash(stream);
-                    return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                }
+                using var stream = File.OpenRead(filePath);
+                byte[] hashBytes = sha256.ComputeHash(stream);
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
             }
         }
 
