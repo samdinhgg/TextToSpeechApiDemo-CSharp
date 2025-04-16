@@ -15,10 +15,10 @@ namespace TextToSpeechApiDemo
         static CloudLogger()
         {
             // Initialize the Logging client.
-            _projectId = Environment.GetEnvironmentVariable("GOOGLE_PROJECT_ID");
+            _projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT");
             if (string.IsNullOrEmpty(_projectId))
             {
-                Console.WriteLine("Warning: GOOGLE_PROJECT_ID environment variable is not set. Cloud Logging will be disabled.");
+                Console.WriteLine("Warning: GOOGLE_CLOUD_PROJECT environment variable is not set. Cloud Logging will be disabled.");
                 return;
             }
 
