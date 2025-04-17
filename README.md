@@ -1,6 +1,7 @@
 # TextToSpeechApiDemo-CSharp
 
 - A simple program to demo Cloud Text-to-Speech (TTS) APIs in CSharp.
+- To download generated audio files: Go to latest release > Download the attached zip files `audio-xxxxx.zip`.
 
 TL;DR
 
