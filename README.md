@@ -9,7 +9,8 @@ TL;DR
   - How to submit texts with SSML markup language.
 - Simply clone the project to your Cloud Shell instance and build and run.
 - Output audio files will be saved to the `audio` folder.
-- Open output audio files within Cloud Shell Editor to listen to play.
+- Open output audio files within Cloud Shell Editor to play the audio.
+- Check the `texts` folder for examples on SSML markup languge.
 
 In short, you don't need to leave your Cloud Shell to complete all the tasks.
 
